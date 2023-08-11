@@ -114,12 +114,106 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
+        board.setViewingPerspective(side);
+
+        for (int c = 0; c < board.size(); ++c) { // loop through columns
+            boolean[] merged = new boolean[4];
+            for (int r = 2; r >= 0; --r) { // loop through rows
+                Tile t = board.tile(c,r);
+
+                if (t == null) {
+                    continue;
+                }
+
+                if (r == 2) { // define case for second tile
+                    if (board.tile(c,3) == null) { // if top position is empty and we just need to move it there
+                        board.move(c, 3, t);
+                        changed = true;
+                    }
+                    else if (t.value() == board.tile(c,3).value()) { // if we need to merge
+                        board.move(c, 3, t);
+                        score += t.value()*2;
+                        merged[3] = true;
+                        changed = true;
+                    }
+                }
+                else if (r == 1) { // define case for third tile
+                    if (board.tile(c,2) == null) { // if second position is empty
+                        if (board.tile(c,3) == null) { // if top position is empty and we just need to move it there
+                            board.move(c, 3, t);
+                            changed = true;
+                        }
+                        else if (t.value() == board.tile(c,3).value() && merged[3] == false) { // if we need to merge
+                            board.move(c, 3, t);
+                            score += t.value()*2;
+                            merged[3] = true;
+                            changed = true;
+                        }
+                        else {
+                            board.move(c, 2, t);
+                            changed = true;
+                        }
+                    }
+                    else {
+                        if (t.value() == board.tile(c,2).value()) {
+                            board.move(c, 2, t);
+                            score += t.value()*2;
+                            merged[2] = true;
+                            changed = true;
+                        }
+                    }
+                }
+                else if (r == 0) { // define case for third tile
+                    if (board.tile(c,1) == null && board.tile(c,2) == null ) { // if first and second position is empty
+                        if (board.tile(c,3) == null) { // if top position is empty and we just need to move it there
+                            board.move(c, 3, t);
+                            changed = true;
+                        }
+                        else if (t.value() == board.tile(c,3).value() && merged[3] == false) { // if we need to merge
+                            board.move(c, 3, t);
+                            score += t.value()*2;
+                            merged[3] = true;
+                            changed = true;
+                        }
+                        else {
+                            board.move(c, 2, t);
+                            changed = true;
+                        }
+                    }
+                    else if (board.tile(c,1) == null) { // if first position is empty
+                        if (t.value() == board.tile(c,2).value() && merged[2] == false) { // if we need to merge
+                            board.move(c, 2, t);
+                            score += t.value()*2;
+                            merged[2] = true;
+                            changed = true;
+                        }
+                        else {
+                            board.move(c, 1, t);
+                            changed = true;
+                        }
+                    }
+                    else {
+                        if (t.value() == board.tile(c,1).value() && merged[1] == false) { // if we need to merge
+                            board.move(c, 1, t);
+                            score += t.value()*2;
+                            merged[1] = true;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        board.setViewingPerspective(Side.NORTH);
+
         checkGameOver();
         if (changed) {
             setChanged();
         }
         return changed;
+
     }
+
 
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
@@ -138,6 +232,13 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        for (int i = 0; i < b.size(); ++i) {
+            for(int j = 0; j < b.size(); ++j) {
+                if (b.tile(i, j) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,6 +249,15 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        for (int i = 0; i < b.size(); ++i) {
+            for(int j = 0; j < b.size(); ++j) {
+                if (b.tile(i, j) != null) {
+                    if (b.tile(i, j).value() == MAX_PIECE) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
@@ -159,9 +269,29 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        if (emptySpaceExists(b)) {
+            return true;
+        }
+
+        // check horizontal adjacent sides
+        for (int row = 0; row < b.size(); ++row) {
+            for (int col = 0; col < b.size()-1; ++col) {
+                if (b.tile(col, row).value() == b.tile(col+1, row).value()) {
+                    return true;
+                }
+            }
+        }
+
+        // check vertical adjacent sides
+        for (int row = 0; row < b.size()-1; ++row) {
+            for (int col = 0; col < b.size(); ++col) {
+                if (b.tile(col, row).value() == b.tile(col, row+1).value()) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
-
 
     @Override
      /** Returns the model as a string, used for debugging. */
